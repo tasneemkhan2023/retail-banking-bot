@@ -1,0 +1,10 @@
+# Ignore the folder containing all the libraries
+node_modules/
+__pycache__/
+venv/
+
+# Ignore your private API keys/secrets
+.env
+
+# Ignore OS-specific junk
+.DS_Store
