@@ -10,3 +10,5 @@ langchain-core
 pypdf
 python-dotenv
 sentence-transformers
+protobuf==4.25.3
+pysqlite3-binary
