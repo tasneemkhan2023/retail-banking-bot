@@ -163,56 +163,67 @@ with st.sidebar:
                     delete_chat(chat_id)
                     st.rerun()
 
-# 6. MAIN CHAT INTERFACE
+# --- 6. MAIN CHAT INTERFACE ---
 active_id = st.session_state.active_chat_id
 active_chat = st.session_state.all_chats[active_id]
 st.header(f"📍 {active_chat['title']}")
 
-# Display conversation history
+# 1. DISPLAY CONVERSATION HISTORY (Updated to show saved sources)
 for message in active_chat["messages"]:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
+        # ✅ Check if this specific message has saved sources
+        if "sources" in message and message["sources"]:
+            with st.expander("📚 Verified Sources"):
+                for s in message["sources"]:
+                    st.write(f"🔹 {s}")
 
-# Process Input
+# 2. PROCESS INPUT
 chat_input = st.chat_input("Ask me anything about retail banking...")
 final_query = chat_input or st.session_state.clicked_question
 
 if final_query:
-    # Immediately show user question
     with st.chat_message("user"):
         st.markdown(final_query)
     
-    # Auto-update title for first-time questions
     if active_chat["title"] == "New Conversation":
         active_chat["title"] = final_query[:25] + "..."
 
     with st.chat_message("assistant"):
         with st.spinner("Consulting bank documents..."):
             try:
-                # API Call
                 res = qa_chain.invoke(final_query)
                 answer = res["result"]
                 
-                # ✅ SUCCESS PATH: Save and Rerun
-                active_chat["messages"].append({"role": "user", "content": final_query})
-                active_chat["messages"].append({"role": "assistant", "content": answer})
-                st.markdown(answer)
-                
-                with st.expander("📚 Verified Sources"):
+                # ✅ NEW: Extract and format sources into a list
+                source_list = []
+                if "source_documents" in res:
                     for doc in res["source_documents"]:
-                        fname = os.path.basename(doc.metadata.get('source', 'Bank_PDF'))
+                        fname = os.path.basename(doc.metadata.get('source', 'Bank_Document'))
                         pg = doc.metadata.get('page', 'N/A')
-                        st.write(f"🔹 **{fname}** (Page {pg})")
+                        source_list.append(f"**{fname}** (Page {pg})")
+                
+                # ✅ SUCCESS PATH: Save message AND the source list to history
+                active_chat["messages"].append({"role": "user", "content": final_query})
+                active_chat["messages"].append({
+                    "role": "assistant", 
+                    "content": answer,
+                    "sources": list(set(source_list)) # set() removes duplicates
+                })
+                
+                # Display immediately
+                st.markdown(answer)
+                if source_list:
+                    with st.expander("📚 Verified Sources"):
+                        for s in list(set(source_list)):
+                            st.write(f"🔹 {s}")
                 
                 st.session_state.clicked_question = None
                 st.rerun()
 
             except Exception as e:
-                # 🛑 ERROR PATH: No Rerun (so the error stays visible)
                 if "429" in str(e) or "RESOURCE_EXHAUSTED" in str(e):
-                    st.error("🚨 **Quota Limit Reached:** You've hit the Gemini Free Tier limit (20 requests). Please wait 60 seconds and try again.")
+                    st.error("🚨 **Quota Limit Reached:** Please wait 60 seconds.")
                 else:
                     st.error(f"⚠️ **Technical Error:** {e}")
-                
-                # Reset click trigger even on failure
                 st.session_state.clicked_question = None
