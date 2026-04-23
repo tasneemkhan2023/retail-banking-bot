@@ -65,14 +65,20 @@ llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", google_api_key=api_key
 
 prompt_template = """You are a Senior Retail Banking Advisor. 
 
-INSTRUCTIONS:
-1. First, check the PROVIDED CONTEXT below to see if the answer is there.
-2. If the answer is in the context, use it to provide a detailed response and mention the sources.
-3. If the question is a general banking query (like "What is retail banking?" or career advice) and NOT in the context, use your general expertise to provide a helpful, professional answer.
-4. Only say "I don't know" if the question is completely unrelated to banking or finance.
+ROLE:
+You provide information about retail banking products and general financial concepts.
 
-Context: {context} 
-Question: {question} 
+CONTEXT FROM DOCUMENTS:
+{context}
+
+USER QUESTION:
+{question}
+
+INSTRUCTIONS:
+1. If the user asks a general question (e.g., "What is retail banking?") and the CONTEXT above is empty or doesn't have the answer, use your pre-trained knowledge to provide a professional and accurate explanation.
+2. If the user asks for specific rates or policies, prioritize the CONTEXT documents.
+3. Keep the tone professional and helpful.
+
 Answer:"""
 
 PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "question"])
@@ -80,7 +86,9 @@ PROMPT = PromptTemplate(template=prompt_template, input_variables=["context", "q
 qa_chain = RetrievalQA.from_chain_type(
     llm=llm,
     chain_type="stuff",
-    retriever=vector_db.as_retriever(search_kwargs={"k": 3}),
+    retriever=vector_db.as_retriever(
+        search_kwargs={"k": 3} 
+    ),
     chain_type_kwargs={"prompt": PROMPT},
     return_source_documents=True
 )
