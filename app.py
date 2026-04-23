@@ -63,8 +63,13 @@ vector_db = load_db()
 # max_retries helps handle minor network blips automatically
 llm = ChatGoogleGenerativeAI(model="gemini-flash-latest", google_api_key=api_key, max_retries=3)
 
-prompt_template = """You are a Senior Retail Banking Advisor. Use the following context to answer. 
-If the answer isn't in the context, politely say you don't know and suggest contacting a branch.
+prompt_template = """You are a Senior Retail Banking Advisor. 
+
+INSTRUCTIONS:
+1. First, check the PROVIDED CONTEXT below to see if the answer is there.
+2. If the answer is in the context, use it to provide a detailed response and mention the sources.
+3. If the question is a general banking query (like "What is retail banking?" or career advice) and NOT in the context, use your general expertise to provide a helpful, professional answer.
+4. Only say "I don't know" if the question is completely unrelated to banking or finance.
 
 Context: {context} 
 Question: {question} 
