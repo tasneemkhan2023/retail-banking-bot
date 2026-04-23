@@ -1,6 +1,16 @@
-__import__('pysqlite3')
 import sys
-sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+
+# --- This block prevents the 'ModuleNotFoundError' on your laptop ---
+try:
+    __import__('pysqlite3')
+    import pysqlite3 # We need to make sure it's actually in sys.modules
+    sys.modules['sqlite3'] = sys.modules.pop('pysqlite3')
+except (ImportError, ModuleNotFoundError, KeyError):
+    # If we are on Windows/Local, we just skip this part
+    pass
+# ------------------------------------------------------------------
+# ------------------------------------------------------------------
+
 
 import streamlit as st
 import os
